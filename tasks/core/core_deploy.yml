@@ -1,0 +1,54 @@
+- name: Transfer built files to remote server
+  become: true
+  ansible.posix.synchronize:
+    src: build/core
+    dest: "{{ root }}"
+    archive: yes
+
+# The pip module does not recognize FreeBSD's pip command, so…
+- name: Install pipenv
+  become: true
+  command: pip install pipenv
+
+- name: Install the backend HTTP bridge dependencies
+  become: true
+  environment:
+    LANG: "fr_FR.UTF-8"
+    PIPENV_VENV_IN_PROJECT: "true"
+  command:
+    cmd: "pipenv --three --bare install --deploy"
+    chdir: "{{ root }}/core"
+
+- name: Install uWSGI
+  become: true
+  environment:
+    LANG: "fr_FR.UTF-8"
+    PIPENV_VENV_IN_PROJECT: "true"
+  command:
+    cmd: "pipenv install uwsgi"
+    chdir: "{{ root }}/core"
+
+- name: Install the uWSGI configuration
+  become: true
+  template:
+    src: templates/core/uwsgi.ini
+    dest: "{{ root }}/uwsgi.ini"
+
+- name: Install the nginx configuration
+  become: true
+  template:
+    src: templates/core/nginx.conf
+    dest: "{{ nginx_root }}/fr.zcraft.zeps.core.conf"
+
+- name: Install the rc.d uWSGI service
+  become: true
+  template:
+    src: templates/core/uwsgi-zeps-core
+    dest: "{{ services_root }}/uwsgi-zeps-core"
+    mode: "u=rwx,g=rx,o=rx"
+
+- name: Start the uWSGI service
+  become: true
+  service:
+    name: uwsgi-zeps-core
+    state: reloaded

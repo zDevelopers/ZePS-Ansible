@@ -1,0 +1,13 @@
+#!/bin/sh
+
+. /etc/rc.subr
+
+name="uwsgi-zeps-core"
+start_cmd="{{ venv }}/bin/uwsgi --ini {{ root }}/uwsgi.ini --safe-pidfile {{ root }}/zeps-core.pid"
+pidfile="{{ root }}/zeps-core.pid"
+
+sig_reload="SIGHUP"
+sig_stop="SIGINT"
+
+load_rc_config $name
+run_rc_command "$1"

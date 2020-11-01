@@ -1,0 +1,58 @@
+---
+- hosts: zcraft
+
+  vars:
+    app_user: www
+
+    root: /var/www/zeps
+    venv: "{{ root }}/core/.venv"
+    logs: /var/log/zeps
+
+    nginx_root: /usr/local/etc/nginx/vhosts
+    services_root: /usr/local/etc/rc.d
+
+    core_workers: 2
+
+  tasks:
+    - name: Create local build directory structure
+      file:
+        path: build/{{ item }}
+        state: directory
+        mode: 0755
+      with_items:
+        - core
+        - gui
+      delegate_to: 127.0.0.1
+
+    - name: Create remote directory structure
+      become: true
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: 0755
+      with_items:
+        - "{{ root }}"
+        - "{{ venv }}"
+        - "{{ logs }}"
+
+    - name: Build and deploy core
+      import_tasks: tasks/core/main.yml
+
+    - name: Build and deploy GUI
+      import_tasks: tasks/gui/main.yml
+
+    - name: "Ensure all files are owned by {{ app_user }}"
+      become: true
+      file:
+        path: "{{ root }}"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        recurse: yes
+
+    - name: Reload nginx
+      become: true
+      service:
+        name: nginx
+        state: reloaded

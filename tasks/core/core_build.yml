@@ -1,0 +1,29 @@
+- name: Checkout the core repository
+  git:
+    repo: 'https://github.com/zdevelopers/zeps-core.git'
+    version: master
+    dest: build/core
+
+- name: Extract the pathfinder's version
+  community.general.xml:
+    path: build/core/pom.xml
+    xpath: /pom:project/pom:version
+    content: text
+    namespaces:
+      pom: http://maven.apache.org/POM/4.0.0
+  register: pathfinder_version
+
+- name: Compile the pathfinder
+  shell:
+    cmd: mvn install
+    chdir: build/core
+
+- name: Copy the built pathfinder to the root directory
+  shell:
+    cmd: mv target/NetherRail-{{ pathfinder_version.matches[0]["{http://maven.apache.org/POM/4.0.0}version"] }}-jar-with-dependencies.jar ZePS.jar
+    chdir: build/core
+
+- name: Cleanup the Maven build directory
+  file:
+    state: absent
+    path: build/core/target

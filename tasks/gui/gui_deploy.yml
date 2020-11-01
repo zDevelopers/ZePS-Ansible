@@ -1,0 +1,34 @@
+- name: Transfer built files to remote server
+  become: true
+  ansible.posix.synchronize:
+    src: build/gui
+    dest: "{{ root }}"
+    archive: yes
+
+- name: Install Zcraft-specific GUI configuration
+  become: true
+  copy:
+    src: "{{ root }}/gui/config_zcraft.php"
+    dest: "{{ root }}/gui/config.php"
+    remote_src: yes
+
+- name: Install GUI Composer dependencies
+  become: true
+  community.general.composer:
+    command: install
+    no_plugins: yes
+    no_scripts: yes
+    optimize_autoloader: yes
+    working_dir: "{{ root }}/gui"
+
+- name: Install the nginx configuration
+  become: true
+  template:
+    src: templates/gui/nginx.conf
+    dest: "{{ nginx_root }}/fr.zcraft.zeps.conf"
+
+- name: Clear the GUI cache
+  become: true
+  file:
+    path: "{{ root }}/gui/cache/twig"
+    state: absent
