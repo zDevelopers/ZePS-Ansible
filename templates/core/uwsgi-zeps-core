@@ -4,10 +4,25 @@
 
 name="uwsgi-zeps-core"
 start_cmd="{{ venv }}/bin/uwsgi --ini {{ root }}/uwsgi.ini --safe-pidfile {{ root }}/zeps-core.pid"
+procname="{{ venv }}/bin/uwsgi"
 pidfile="{{ root }}/zeps-core.pid"
 
 sig_reload="SIGHUP"
 sig_stop="SIGINT"
+
+extra_commands="reload"
+
+reload_cmd="${name}_reload"
+stop_cmd="${name}_stop"
+
+uwsgi-zeps-core_reload() {
+    pkill -HUP -F ${pidfile}
+}
+
+uwsgi-zeps-core_stop() {
+    pkill -INT -F ${pidfile}
+}
+
 
 load_rc_config $name
 run_rc_command "$1"
